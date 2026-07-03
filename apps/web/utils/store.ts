@@ -49,3 +49,5 @@ export const threadsAtom = atom<any>(null);
 export const openCreateWorkspaceOpenAtom = atom<boolean>(false);
 
 export const openInviteWorkspaceOpenAtom = atom<boolean>(false);
+
+export const openEditWorkspaceOpenAtom = atom<boolean>(false);

@@ -37,6 +37,7 @@ import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import {
   openComposeAtom,
   openCreateWorkspaceOpenAtom,
+  openEditWorkspaceOpenAtom,
   openInviteWorkspaceOpenAtom,
   tabAtom,
   threadsAtom,
@@ -159,8 +160,18 @@ export function Mail({
   const [createWorkspaceOpen, setCreateWorkspaceOpen] = useAtom(
     openCreateWorkspaceOpenAtom,
   );
+  const [editWorkspaceOpen, setEditWorkspaceOpen] = useAtom(
+    openEditWorkspaceOpenAtom,
+  );
   const [inviteWorkspaceOpen, setInviteWorkspaceOpen] = useAtom(
     openInviteWorkspaceOpenAtom,
+  );
+  const activeWorkspace = React.useMemo(
+    () =>
+      workspacesData?.workspaces.find(
+        (workspace) => workspace.id === workspacesData.activeWorkspaceId,
+      ) ?? null,
+    [workspacesData],
   );
 
   React.useEffect(() => {
@@ -233,6 +244,73 @@ export function Mail({
       setIsUploading(false);
     }
   }, [edgestore, file, mutateCache, setCreateWorkspaceOpen, workspaceName]);
+
+  const [editWorkspaceName, setEditWorkspaceName] = React.useState("");
+  const [editWorkspaceFile, setEditWorkspaceFile] = React.useState<
+    File | undefined
+  >();
+  const [isEditingWorkspace, setIsEditingWorkspace] = React.useState(false);
+
+  React.useEffect(() => {
+    if (editWorkspaceOpen && activeWorkspace) {
+      setEditWorkspaceName(activeWorkspace.name);
+      setEditWorkspaceFile(undefined);
+    }
+    if (!editWorkspaceOpen) {
+      setEditWorkspaceName("");
+      setEditWorkspaceFile(undefined);
+    }
+  }, [activeWorkspace, editWorkspaceOpen]);
+
+  const handleEditWorkspace = React.useCallback(async () => {
+    if (!activeWorkspace) {
+      return;
+    }
+
+    try {
+      setIsEditingWorkspace(true);
+
+      let imageUrl: string | null | undefined = undefined;
+
+      if (editWorkspaceFile) {
+        const upload = await uploadWorkspaceImage(edgestore, editWorkspaceFile);
+        imageUrl = upload.url;
+      }
+
+      const response = await fetch(
+        `/api/user/workspaces/${activeWorkspace.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: editWorkspaceName.trim(),
+            image: imageUrl,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || "Failed to update workspace");
+      }
+
+      setEditWorkspaceOpen(false);
+      await mutateCache("/api/user/workspaces");
+    } catch (error) {
+      console.error("Failed to update workspace", error);
+    } finally {
+      setIsEditingWorkspace(false);
+    }
+  }, [
+    activeWorkspace,
+    editWorkspaceFile,
+    editWorkspaceName,
+    edgestore,
+    mutateCache,
+    setEditWorkspaceOpen,
+  ]);
 
   const handleInviteMember = React.useCallback(async () => {
     if (!workspacesData?.activeWorkspaceId) {
@@ -439,6 +517,75 @@ export function Mail({
                     <>
                       <Plus className="mr-2 h-4 w-4" />
                       Create
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={editWorkspaceOpen}
+          onOpenChange={(open) => {
+            setEditWorkspaceOpen(open);
+            if (!open) {
+              setEditWorkspaceName("");
+              setEditWorkspaceFile(undefined);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-[625px]">
+            <DialogHeader>
+              <DialogTitle className="pb-2 font-cal text-xl font-bold">
+                Edit Workspace
+              </DialogTitle>
+              <DialogDescription>
+                Update the active workspace name or logo.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex flex-col space-y-2">
+                <Label>Logo</Label>
+                <SingleImageDropzone
+                  className="h-48 w-full"
+                  value={editWorkspaceFile}
+                  onChange={(nextFile) => {
+                    setEditWorkspaceFile(nextFile);
+                  }}
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label>Name</Label>
+                <Input
+                  type="text"
+                  name="name"
+                  value={editWorkspaceName}
+                  onChange={(event) => setEditWorkspaceName(event.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={() => setEditWorkspaceOpen(false)}
+                  variant="secondary"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleEditWorkspace}
+                  disabled={isEditingWorkspace || !editWorkspaceName.trim()}
+                >
+                  {isEditingWorkspace ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Save
                     </>
                   )}
                 </Button>

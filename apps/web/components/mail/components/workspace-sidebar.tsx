@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useSetAtom } from "jotai";
-import { Plus, Users2 } from "lucide-react";
+import { Pencil, Plus, Users2 } from "lucide-react";
 import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   openCreateWorkspaceOpenAtom,
+  openEditWorkspaceOpenAtom,
   openInviteWorkspaceOpenAtom,
 } from "@/utils/store";
 import { workspaceRoleLabel, type WorkspaceSummary } from "@/utils/workspaces";
@@ -55,6 +56,7 @@ export function WorkspaceSidebar({
 }: WorkspaceSidebarProps) {
   const { data: session } = useSession();
   const setCreateWorkspaceOpen = useSetAtom(openCreateWorkspaceOpenAtom);
+  const setEditWorkspaceOpen = useSetAtom(openEditWorkspaceOpenAtom);
   const setInviteWorkspaceOpen = useSetAtom(openInviteWorkspaceOpenAtom);
 
   const activeWorkspace = React.useMemo(
@@ -64,6 +66,8 @@ export function WorkspaceSidebar({
       null,
     [activeWorkspaceId, workspaces],
   );
+  const canManageActiveWorkspace =
+    activeWorkspace?.role === "OWNER" || activeWorkspace?.role === "ADMIN";
 
   return (
     <div className="left-0 top-0 flex h-screen w-16 flex-col items-center justify-between space-y-2 border-r">
@@ -123,10 +127,17 @@ export function WorkspaceSidebar({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => setInviteWorkspaceOpen(true)}
-                disabled={!activeWorkspace}
+                disabled={!canManageActiveWorkspace}
               >
                 <Users2 className="mr-2 h-4 w-4" />
                 Invite member
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setEditWorkspaceOpen(true)}
+                disabled={!canManageActiveWorkspace}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit workspace
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
