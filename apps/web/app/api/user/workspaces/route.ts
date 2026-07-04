@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
 import { auth } from "@/app/api/auth/[...nextauth]/auth";
 import prisma from "@/utils/prisma";
 import { withError } from "@/utils/middleware";
 import { ACTIVE_WORKSPACE_COOKIE } from "@/utils/workspaces";
-import { z } from "zod";
 
 type WorkspaceMembership = {
   id: string;
@@ -16,6 +17,9 @@ type WorkspaceMembership = {
     name: string;
     image: string | null;
     membership: {
+      id: string;
+    }[];
+    emailAccounts: {
       id: string;
     }[];
   };
@@ -52,6 +56,11 @@ export const GET = withError(async (request: Request) => {
               id: true,
             },
           },
+          emailAccounts: {
+            select: {
+              id: true,
+            },
+          },
         },
       },
     },
@@ -80,6 +89,7 @@ export const GET = withError(async (request: Request) => {
       image: membership.organization.image,
       role: membership.role,
       memberCount: membership.organization.membership.length,
+      accountCount: membership.organization.emailAccounts.length,
       invitedEmail: membership.invitedEmail,
       invitedName: membership.invitedName,
       isPending: !membership.userId && !!membership.invitedEmail,

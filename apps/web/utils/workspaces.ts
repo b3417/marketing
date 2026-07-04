@@ -8,6 +8,7 @@ export type WorkspaceSummary = {
   image: string | null;
   role: WorkspaceRole;
   memberCount: number;
+  accountCount: number;
   invitedEmail: string | null;
   invitedName: string | null;
   isPending: boolean;

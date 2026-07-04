@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { useSetAtom } from "jotai";
 import { Pencil, Plus, Users2 } from "lucide-react";
@@ -116,6 +118,9 @@ export function WorkspaceSidebar({
                       <span className="text-xs text-muted-foreground">
                         {workspaceRoleLabel(workspace.role)}
                         {workspace.isPending ? " · Pending invite" : ""}
+                        {workspace.accountCount
+                          ? ` · ${workspace.accountCount} Google accounts`
+                          : ""}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
@@ -192,6 +197,18 @@ export function WorkspaceSidebar({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[160px]">
                 <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
+                {activeWorkspace ? (
+                  <DropdownMenuItem>
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {activeWorkspace.role}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {activeWorkspace.name}
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                ) : null}
                 {userNavigation.map((item) => (
                   <DropdownMenuItem key={item.name}>
                     <a href={item.href} onClick={item.onClick}>
